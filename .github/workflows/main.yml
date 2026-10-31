@@ -1,0 +1,43 @@
+name: Build
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ZIP ni ochish
+        run: unzip -q CoolFrog_v1.1.zip
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, xml, curl, zip
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Backend (composer)
+        working-directory: CoolFrog
+        run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+      - name: Frontend (npm)
+        working-directory: CoolFrog/frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Tayyor ZIP
+        working-directory: CoolFrog
+        run: bash build-release.sh --skip-install
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CoolFrog-ready
+          path: CoolFrog/CoolFrog-ready.zip
+
